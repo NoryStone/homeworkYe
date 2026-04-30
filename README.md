@@ -1,3 +1,4 @@
 # C语言学习
-ex01: 第一个HelloWorld程序# homeworkYe
-课程作业
+ex01: 
+- HelloWorld
+- 键盘输入输出功能
