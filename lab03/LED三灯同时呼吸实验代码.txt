@@ -1,0 +1,37 @@
+// 定义3个LED引脚
+const int ledPin1 = 16;  
+const int ledPin2 = 5;  
+const int ledPin3 = 4;  
+
+// PWM属性
+const int freq = 5000;          // 频率 5000Hz
+const int resolution = 8;       // 分辨率 8位 (0-255)
+
+void setup() {
+  Serial.begin(115200);
+
+  // 给3个LED都绑定PWM
+  ledcAttach(ledPin1, freq, resolution);
+  ledcAttach(ledPin2, freq, resolution);
+  ledcAttach(ledPin3, freq, resolution);
+}
+
+void loop() {
+  // 逐渐变亮（三个灯同时亮）
+  for(int dutyCycle = 0; dutyCycle <= 255; dutyCycle++){   
+    ledcWrite(ledPin1, dutyCycle);   
+    ledcWrite(ledPin2, dutyCycle);   
+    ledcWrite(ledPin3, dutyCycle);   
+    delay(10);
+  }
+
+  // 逐渐变暗（三个灯同时暗）
+  for(int dutyCycle = 255; dutyCycle >= 0; dutyCycle--){
+    ledcWrite(ledPin1, dutyCycle);   
+    ledcWrite(ledPin2, dutyCycle);   
+    ledcWrite(ledPin3, dutyCycle);   
+    delay(10);
+  }
+  
+  Serial.println("3路LED同步呼吸完成一轮");
+}
