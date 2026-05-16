@@ -1,0 +1,53 @@
+// ex03 SOS闪烁代码（纯millis实现，无delay）
+const int ledPin = 2;
+
+// 时序参数
+const unsigned long dotOn = 200;    // 短亮
+const unsigned long dotOff = 200;   // 短灭
+const unsigned long dashOn = 600;    // 长亮
+const unsigned long dashOff = 200;  // 长灭
+const unsigned long charGap = 500;  // 字母间隔
+const unsigned long sosGap = 2000;  // SOS一轮结束停顿
+
+// 状态变量
+unsigned long prevTime = 0;
+int state = 0; // 0:S短1,1:S短2,2:S短3,3:S间隔,4:O长1,5:O长2,6:O长3,7:O间隔,8:S短1,9:S短2,10:S短3,11:结束停顿
+bool ledOn = false;
+
+void setup() {
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, LOW);
+}
+
+void loop() {
+  unsigned long now = millis();
+  unsigned long dur;
+
+  switch(state) {
+    case 0: dur = ledOn ? dotOn : dotOff; break;
+    case 1: dur = ledOn ? dotOn : dotOff; break;
+    case 2: dur = ledOn ? dotOn : dotOff; break;
+    case 3: dur = charGap; ledOn = false; break;
+    case 4: dur = ledOn ? dashOn : dashOff; break;
+    case 5: dur = ledOn ? dashOn : dashOff; break;
+    case 6: dur = ledOn ? dashOn : dashOff; break;
+    case 7: dur = charGap; ledOn = false; break;
+    case 8: dur = ledOn ? dotOn : dotOff; break;
+    case 9: dur = ledOn ? dotOn : dotOff; break;
+    case 10: dur = ledOn ? dotOn : dotOff; break;
+    case 11: dur = sosGap; ledOn = false; break;
+    default: state=0; dur=0;
+  }
+
+  if(now - prevTime >= dur) {
+    prevTime = now;
+    if(state==3 || state==7 || state==11) {
+      state++;
+      if(state>11) state=0;
+    } else {
+      ledOn = !ledOn;
+      if(!ledOn) state++;
+    }
+    digitalWrite(ledPin, ledOn ? HIGH : LOW);
+  }
+}
