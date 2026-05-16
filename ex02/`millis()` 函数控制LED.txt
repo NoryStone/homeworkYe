@@ -1,0 +1,28 @@
+const int ledPin = 2;
+unsigned long previousMillis = 0;
+const long interval = 500;
+bool ledState = LOW;
+
+// 加一个计数变量
+int count = 0;
+
+void setup() {
+  pinMode(ledPin, OUTPUT);
+  Serial.begin(115200);  // 串口初始化
+  Serial.println("ex01 开始运行！");
+}
+
+void loop() {
+  unsigned long currentMillis = millis();
+
+  if (currentMillis - previousMillis >= interval) {
+    previousMillis = currentMillis;
+    ledState = !ledState;
+    digitalWrite(ledPin, ledState);
+
+    // 每次闪烁都打印数字！
+    count++;
+    Serial.print("闪烁次数：");
+    Serial.println(count);
+  }
+}
