@@ -1,0 +1,36 @@
+// 定义3个LED引脚
+const int ledPin1 = 2;  
+const int ledPin2 = 3;  
+const int ledPin3 = 4;  
+
+// PWM属性
+const int freq = 5000;          
+const int resolution = 8;       
+
+void setup() {
+  Serial.begin(115200);
+  ledcAttach(ledPin1, freq, resolution);
+  ledcAttach(ledPin2, freq, resolution);
+  ledcAttach(ledPin3, freq, resolution);
+}
+
+// 单个LED呼吸函数
+void breathe(int pin) {
+  // 渐亮
+  for(int duty = 0; duty <= 255; duty++){
+    ledcWrite(pin, duty);
+    delay(8);
+  }
+  // 渐暗
+  for(int duty = 255; duty >= 0; duty--){
+    ledcWrite(pin, duty);
+    delay(8);
+  }
+  ledcWrite(pin, 0); // 熄灭
+}
+
+void loop() {
+  breathe(ledPin1);
+  breathe(ledPin2);
+  breathe(ledPin3);
+}
