@@ -22,7 +22,7 @@ void loop() {
     triggered = true;  // 锁住，防止一直触发
   }
 
-  // 松手后解锁
+  // 松手后解锁.
   if (!isTouched) {
     triggered = false;
   }
