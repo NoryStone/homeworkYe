@@ -1,0 +1,164 @@
+#include <WiFi.h>
+#include <WebServer.h>
+
+// ==================== 配置区 ====================
+const char* ssid     = "hid39895789的Pura 70";
+const char* password = "yys112233";
+
+const int touchPin = T0;   // 触摸引脚
+const int ledPin   = 2;    // 报警LED引脚
+
+WebServer server(80);
+
+// 系统状态变量
+bool isArmed = false;      // 布防状态
+bool isAlarm = false;       // 报警状态
+const int touchThreshold = 300; // 触摸阈值（根据之前的串口数据设置）
+
+// ==================== HTML页面 ====================
+const char* htmlPage = R"HTML(
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 安防报警器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 100px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            display: inline-block;
+        }
+        button {
+            font-size: 20px;
+            padding: 15px 30px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #armBtn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        #disarmBtn {
+            background-color: #f44336;
+            color: white;
+        }
+        #status {
+            font-size: 24px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>安防报警器控制中心</h1>
+        <button id="armBtn" onclick="armSystem()">布防 (Arm)</button>
+        <button id="disarmBtn" onclick="disarmSystem()">撤防 (Disarm)</button>
+        <div id="status">当前状态：未布防</div>
+    </div>
+
+    <script>
+        function armSystem() {
+            fetch('/arm')
+                .then(response => response.text())
+                .then(() => {
+                    document.getElementById('status').textContent = "当前状态：已布防";
+                });
+        }
+
+        function disarmSystem() {
+            fetch('/disarm')
+                .then(response => response.text())
+                .then(() => {
+                    document.getElementById('status').textContent = "当前状态：未布防";
+                });
+        }
+    </script>
+</body>
+</html>
+)HTML";
+
+// ==================== 路由处理函数 ====================
+void handleRoot() {
+  server.send(200, "text/html", htmlPage);
+}
+
+// 布防接口
+void handleArm() {
+  isArmed = true;
+  isAlarm = false;
+  server.send(200, "text/plain", "系统已布防");
+  Serial.println("系统已布防");
+}
+
+// 撤防接口
+void handleDisarm() {
+  isArmed = false;
+  isAlarm = false;
+  digitalWrite(ledPin, LOW); // 熄灭LED
+  server.send(200, "text/plain", "系统已撤防");
+  Serial.println("系统已撤防");
+}
+
+// ==================== Setup初始化 ====================
+void setup() {
+  Serial.begin(115200);
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, LOW);
+
+  // 连接WiFi
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.println("WiFi连接成功！");
+  Serial.print("IP地址: ");
+  Serial.println(WiFi.localIP());
+
+  // 注册路由
+  server.on("/", handleRoot);
+  server.on("/arm", handleArm);
+  server.on("/disarm", handleDisarm);
+
+  // 启动Web服务器
+  server.begin();
+  Serial.println("Web服务器已启动");
+}
+
+// ==================== 主循环 ====================
+void loop() {
+  server.handleClient();
+
+  // 读取触摸值
+  int touchValue = touchRead(touchPin);
+
+  // 布防状态下，触摸引脚触发报警
+  if (isArmed && !isAlarm) {
+    if (touchValue < touchThreshold) {
+      isAlarm = true;
+      Serial.println("⚠️ 触发报警！");
+    }
+  }
+
+  // 报警状态：LED高频闪烁，直到撤防
+  if (isAlarm) {
+    digitalWrite(ledPin, HIGH);
+    delay(50);
+    digitalWrite(ledPin, LOW);
+    delay(50);
+  } else {
+    digitalWrite(ledPin, LOW);
+  }
+}

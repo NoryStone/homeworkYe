@@ -1,0 +1,34 @@
+// 引脚定义（两个LED接不同GPIO，注意串联220Ω电阻）
+const int ledAPin = 2;    // 灯A（蓝灯/红灯）
+const int ledBPin = 4;    // 灯B（另一个颜色灯）
+
+// 呼吸参数
+int brightnessA = 0;
+int fadeStep = 2;         // 亮度变化步长，数值越小过渡越平滑
+int speedDelay = 10;      // 控制整体闪烁速度，越小越快
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(ledAPin, OUTPUT);
+  pinMode(ledBPin, OUTPUT);
+}
+
+void loop() {
+  // 1. 控制灯A的亮度从0→255→0循环
+  analogWrite(ledAPin, brightnessA);
+  
+  // 2. 灯B的亮度与灯A反相：255 - brightnessA
+  int brightnessB = 255 - brightnessA;
+  analogWrite(ledBPin, brightnessB);
+
+  // 3. 更新灯A的亮度
+  brightnessA += fadeStep;
+
+  // 4. 边界反转：到0或255时反向变化
+  if (brightnessA <= 0 || brightnessA >= 255) {
+    fadeStep = -fadeStep;
+  }
+
+  // 控制过渡平滑度和速度
+  delay(speedDelay);
+}

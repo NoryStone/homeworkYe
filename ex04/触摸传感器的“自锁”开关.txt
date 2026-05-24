@@ -1,0 +1,31 @@
+const int touchPin = T0;
+const int ledPin = 2;
+bool ledState = LOW;
+
+bool lastTouched = false;
+bool triggered = false;
+
+void setup() {
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, ledState);
+  Serial.begin(115200);
+}
+
+void loop() {
+  int val = touchRead(touchPin);
+  bool isTouched = (val < 800);  // 阈值放宽，适配你的板子
+
+  // 只在【从没摸到摸到】瞬间触发一次
+  if (isTouched && !lastTouched && !triggered) {
+    ledState = !ledState;
+    digitalWrite(ledPin, ledState);
+    triggered = true;  // 锁住，防止一直触发
+  }
+
+  // 松手后解锁
+  if (!isTouched) {
+    triggered = false;
+  }
+
+  lastTouched = isTouched;
+}

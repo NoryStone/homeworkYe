@@ -1,0 +1,114 @@
+#include <WiFi.h>
+#include <WebServer.h>
+
+// ==================== 配置区 ====================
+const char* ssid     = "hid39895789的Pura 70";
+const char* password = "yys112233";
+const int touchPin = T0;   // 触摸引脚T0(GPIO4)
+
+WebServer server(80);
+
+// ==================== HTML仪表盘页面（含AJAX刷新） ====================
+const char* htmlPage = R"HTML(
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 触摸传感器仪表盘</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 100px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            display: inline-block;
+        }
+        h1 {
+            color: #333;
+        }
+        #value {
+            font-size: 72px;
+            font-weight: bold;
+            color: #2196F3;
+            margin: 30px 0;
+        }
+        .hint {
+            color: #666;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>实时触摸传感器仪表盘</h1>
+        <div id="value">0</div>
+        <p class="hint">靠近触摸引脚时数值会变小，远离时恢复</p>
+    </div>
+
+    <script>
+        // 用AJAX每100ms拉取一次数据
+        function updateValue() {
+            fetch('/data')
+                .then(response => response.text())
+                .then(value => {
+                    document.getElementById('value').textContent = value;
+                })
+                .catch(err => console.error('获取数据失败:', err));
+        }
+
+        // 定时刷新（100ms一次，实时感强）
+        setInterval(updateValue, 100);
+    </script>
+</body>
+</html>
+)HTML";
+
+// ==================== 路由处理函数 ====================
+// 根路由：返回仪表盘页面
+void handleRoot() {
+  server.send(200, "text/html", htmlPage);
+}
+
+// 数据接口：返回当前触摸传感器数值
+void handleGetData() {
+  int touchValue = touchRead(touchPin);
+  server.send(200, "text/plain", String(touchValue));
+  Serial.print("当前触摸值: ");
+  Serial.println(touchValue);
+}
+
+// ==================== Setup初始化 ====================
+void setup() {
+  Serial.begin(115200);
+
+  // 连接WiFi
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.println("WiFi连接成功！");
+  Serial.print("仪表盘地址: ");
+  Serial.println(WiFi.localIP());
+
+  // 注册路由
+  server.on("/", handleRoot);
+  server.on("/data", handleGetData);
+
+  // 启动Web服务器
+  server.begin();
+  Serial.println("Web服务器已启动");
+}
+
+// ==================== 主循环 ====================
+void loop() {
+  server.handleClient();
+}
